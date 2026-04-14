@@ -7,21 +7,19 @@ var DL_SVG =
   '</svg>';
 
 /**
- * Captures the current slide preview as a PNG at the correct resolution
- * for the active mode (1080×1350 carousel, 1080×1920 story) and triggers download.
+ * Captures the current slide preview as a PNG (1080×1350) and triggers download.
  * @returns {Promise<void>}
  */
 async function downloadCurrent() {
   var el  = document.getElementById('slide-preview');
   var btn = document.getElementById('dlBtn');
-  var fmt = FORMAT[currentMode];
 
   btn.textContent = 'Gerando…';
   btn.disabled = true;
 
   try {
     var canvas = await html2canvas(el, {
-      scale: fmt.exportScale,
+      scale: 2.7,           // 400 × 2.7 = 1080px width, 500 × 2.7 = 1350px height
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#0d0d14',
@@ -29,8 +27,7 @@ async function downloadCurrent() {
     });
 
     var link = document.createElement('a');
-    link.download =
-      'bescheiben-' + fmt.downloadSuffix + '-slide-' + (currentSlide + 1) + '.png';
+    link.download = 'bescheiben-slide-' + (currentSlide + 1) + '.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
   } catch (err) {
@@ -47,11 +44,10 @@ async function downloadCurrent() {
  * @returns {Promise<void>}
  */
 async function downloadAll() {
-  var total = slides.length;
-  for (var i = 0; i < total; i++) {
+  for (var i = 0; i < slides.length; i++) {
     currentSlide = i;
     renderSlidePreview();
-    await new Promise(function (resolve) { setTimeout(resolve, 350); });
+    await new Promise(function (resolve) { setTimeout(resolve, 300); });
     await downloadCurrent();
     await new Promise(function (resolve) { setTimeout(resolve, 200); });
   }
