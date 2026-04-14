@@ -62,7 +62,7 @@ module.exports = async function handler(req, res) {
   }
 
   const endpoint =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' +
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' +
     apiKey;
 
   try {
