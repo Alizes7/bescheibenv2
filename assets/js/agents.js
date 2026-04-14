@@ -1,73 +1,54 @@
 'use strict';
 
-// ── QUICK PROMPTS ─────────────────────────────────────
-
 var QUICK_PROMPTS = {
   story: [
-    'Crie um storytelling para meu próximo carrossel sobre marketing digital B2B',
+    'Crie um storytelling para carrossel sobre marketing digital B2B',
     'Storytelling sobre transformação de marca para meu cliente',
     'Storytelling de dor → solução para agência de marketing',
     'Storytelling de autoridade para agência digital',
   ],
   ideas: [
-    '5 ideias de carrossel para agência de marketing digital',
-    'Ideias de carrossel para escritório de contabilidade B2B',
-    'Ideias virais de post para marketing B2B no Instagram',
-    'Posts educativos que geram autoridade e leads',
+    'Gere um carrossel completo com 5 slides para agência de marketing digital B2B',
+    'Crie um carrossel de 5 slides sobre como uma empresa B2B pode gerar leads no Instagram',
+    'Monte um carrossel de 5 slides sobre os erros de posicionamento digital mais comuns',
+    'Crie um carrossel de 5 slides mostrando o processo de crescimento digital da Bescheiben',
   ],
 };
 
-// ── SYSTEM PROMPTS ────────────────────────────────────
-
 var SYSTEM_STORY =
-  'Você é um especialista em storytelling para marketing digital B2B no Instagram.\n' +
-  'Você escreve para a Bescheiben Digital Agency — uma agência com estética dark/tech, tom direto e premium.\n' +
-  'Formato de carrossel: cada slide é numerado. Use linguagem impactante, frases curtas, sem floreios genéricos de IA.\n' +
-  'Retorne o storytelling estruturado por slides, com: [SLIDE 1: COVER] título, subtítulo, CTA / [SLIDE 2-X: CONTEÚDO] etc.\n' +
-  'Tom: provocador, inteligente, confiante. Nunca diga "hoje em dia" ou frases clichê.';
+  'Você é especialista em storytelling para marketing digital B2B no Instagram.\n' +
+  'Escreve para a Bescheiben Digital Agency — estética dark/tech, tom direto e premium.\n' +
+  'Retorne o storytelling estruturado por slides: [SLIDE 1: COVER] título, subtítulo, CTA / [SLIDE 2-X: CONTEÚDO] etc.\n' +
+  'Tom: provocador, inteligente, confiante. Nunca use "hoje em dia" ou frases clichê.';
 
 var SYSTEM_IDEAS =
-  'Você é um estrategista de conteúdo B2B especialista em Instagram.\n' +
-  'Você cria ideias de posts para a Bescheiben Digital Agency e seus clientes.\n' +
-  'Retorne sempre uma lista numerada com: título do post, tipo (carrossel/reels/estático), gancho de primeira linha, ' +
-  'estrutura de slides sugerida, e objetivo estratégico.\n' +
-  'Tom: direto ao ponto, sem jargão vazio. Ideias acionáveis e baseadas em resultados.';
+  'Você é estrategista de conteúdo B2B e vai gerar um carrossel completo para Instagram.\n' +
+  'Retorne EXATAMENTE neste formato JSON (sem markdown, sem texto fora do JSON):\n' +
+  '{\n' +
+  '  "slides": [\n' +
+  '    { "type": "cover", "tag": "TAG AQUI", "headline": "Título aqui", "headlineHighlight": "palavra", "sub": "subtítulo aqui", "showCta": true, "cta": "Deslize para ver" },\n' +
+  '    { "type": "content", "step": "PASSO 01", "headline": "Título aqui", "headlineHighlight": "palavra", "body": "Texto do corpo aqui" },\n' +
+  '    { "type": "quote", "quoteTag": "INSIGHT", "quote": "Texto acima da linha", "author": "Frase principal aqui", "quoteHighlight": "palavra" },\n' +
+  '    { "type": "cta", "eyebrow": "TAG", "headline": "Título CTA", "headlineHighlight": "palavra", "body": "Item 1\nItem 2\nItem 3", "cta": "Texto do botão" }\n' +
+  '  ]\n' +
+  '}\n' +
+  'Crie entre 4 e 6 slides. Tom: direto, premium, B2B. Nunca use clichês de IA.';
 
 // ── AGENT TABS ────────────────────────────────────────
 
-/**
- * Switches the visible agent pane.
- * @param {'story'|'ideas'} name
- */
 function switchAgent(name) {
   var tabs  = document.querySelectorAll('.agent-tab');
   var panes = document.querySelectorAll('.agent-pane');
-  var order = ['story', 'ideas'];
-
-  tabs.forEach(function (tab, i) {
-    var active = order[i] === name;
-    tab.classList.toggle('active', active);
-    tab.setAttribute('aria-selected', String(active));
-  });
-
-  panes.forEach(function (pane, i) {
-    var visible = order[i] === name;
-    pane.classList.toggle('visible', visible);
-    if (visible) {
-      pane.removeAttribute('hidden');
-    } else {
-      pane.setAttribute('hidden', '');
-    }
+  ['story', 'ideas'].forEach(function (id, i) {
+    var active = id === name;
+    tabs[i].classList.toggle('active', active);
+    tabs[i].setAttribute('aria-selected', String(active));
+    panes[i].classList.toggle('visible', active);
+    if (active) panes[i].removeAttribute('hidden');
+    else panes[i].setAttribute('hidden', '');
   });
 }
 
-// ── QUICK PROMPT ──────────────────────────────────────
-
-/**
- * Pre-fills the agent textarea and sends.
- * @param {'story'|'ideas'} agentId
- * @param {number} promptIdx
- */
 function quickPrompt(agentId, promptIdx) {
   var text = QUICK_PROMPTS[agentId][promptIdx];
   if (!text) return;
@@ -75,15 +56,8 @@ function quickPrompt(agentId, promptIdx) {
   sendAgent(agentId);
 }
 
-// ── SEND MESSAGE ──────────────────────────────────────
+// ── SEND ──────────────────────────────────────────────
 
-/**
- * Sends a user message to the AI agent and renders the response.
- * The API call goes through /api/chat (Vercel serverless proxy)
- * so the Anthropic API key never touches the browser.
- * @param {'story'|'ideas'} agentId
- * @returns {Promise<void>}
- */
 async function sendAgent(agentId) {
   var inputEl    = document.getElementById(agentId + 'Input');
   var messagesEl = document.getElementById(agentId + 'Messages');
@@ -91,22 +65,16 @@ async function sendAgent(agentId) {
   var userText   = inputEl.value.trim();
   if (!userText) return;
 
-  // User message bubble
   var userMsg = document.createElement('div');
   userMsg.className = 'msg user';
   userMsg.textContent = userText;
   messagesEl.appendChild(userMsg);
-
   inputEl.value    = '';
   sendBtn.disabled = true;
 
-  // Loading indicator
   var loadMsg = document.createElement('div');
   loadMsg.className = 'msg ai loading';
-  loadMsg.innerHTML =
-    '<div class="dot-loader" aria-label="Carregando resposta">' +
-      '<span></span><span></span><span></span>' +
-    '</div>';
+  loadMsg.innerHTML = '<div class="dot-loader" aria-label="Gerando resposta"><span></span><span></span><span></span></div>';
   messagesEl.appendChild(loadMsg);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
@@ -122,29 +90,50 @@ async function sendAgent(agentId) {
       }),
     });
 
-    if (!res.ok) {
-      var errData = await res.json().catch(function () { return {}; });
-      throw new Error(errData.error || 'HTTP ' + res.status);
-    }
-
-    var data  = await res.json();
-    var reply = (data.content && data.content[0] && data.content[0].text) || 'Sem resposta.';
+    var data = null;
+    try { data = await res.json(); } catch (_) { data = null; }
 
     loadMsg.remove();
 
+    if (!res.ok) {
+      appendError(messagesEl, getMsgErro(res.status, data));
+      sendBtn.disabled = false;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return;
+    }
+
+    var reply = (data && data.content && data.content[0] && data.content[0].text) || '';
+    if (!reply) {
+      appendError(messagesEl, 'O modelo retornou uma resposta vazia. Tente novamente.');
+      sendBtn.disabled = false;
+      return;
+    }
+
+    // ── IDEIAS: tenta parsear JSON e carregar slides direto
+    if (agentId === 'ideas') {
+      var parsed = tryParseSlides(reply);
+      if (parsed && parsed.length > 0) {
+        renderIdeasResult(messagesEl, parsed, reply);
+        sendBtn.disabled = false;
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return;
+      }
+    }
+
+    // ── STORY: resultado de texto com botão de aplicar
     var aiMsg = document.createElement('div');
     aiMsg.className = 'msg ai';
     aiMsg.innerHTML =
       '<span class="ai-badge">' +
-        (agentId === 'story' ? '📖 Storytelling' : '💡 Ideia gerada') +
+        (agentId === 'story' ? '📖 Storytelling · Gemini' : '💡 Ideia · Gemini') +
       '</span>' +
-      reply.replace(/\n/g, '<br>');
+      escapeHtmlBasic(reply).replace(/\n/g, '<br>');
 
     if (agentId === 'story') {
       var useBtn = document.createElement('button');
       useBtn.className   = 'use-result-btn';
       useBtn.type        = 'button';
-      useBtn.textContent = '✦ Usar como base nos slides';
+      useBtn.textContent = '✦ Aplicar nos slides';
       useBtn.addEventListener('click', function () { applyStoryToSlides(reply); });
       aiMsg.appendChild(useBtn);
     }
@@ -153,52 +142,104 @@ async function sendAgent(agentId) {
 
   } catch (err) {
     loadMsg.remove();
-    console.error('[agent] fetch error:', err);
-
-    var errMsg = document.createElement('div');
-    errMsg.className   = 'msg ai';
-    errMsg.textContent = 'Erro ao conectar com a IA: ' + err.message;
-    messagesEl.appendChild(errMsg);
+    appendError(messagesEl, 'Sem conexão com o servidor. Verifique sua internet.');
   }
 
   sendBtn.disabled = false;
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// ── APPLY STORY TO SLIDES ─────────────────────────────
+// ── IDEAS: render rich result + load button ───────────
 
-/**
- * Parses [SLIDE N: ...] markers from the storytelling response
- * and applies them to the slides array.
- * @param {string} text
- */
+function renderIdeasResult(messagesEl, parsedSlides, rawText) {
+  var aiMsg = document.createElement('div');
+  aiMsg.className = 'msg ai';
+
+  var preview = parsedSlides.slice(0, 3).map(function (s, i) {
+    var label = { cover: '🖼 Cover', content: '📄 ' + (s.step || 'Conteúdo'), quote: '💬 Insight', cta: '🎯 CTA' }[s.type] || s.type;
+    var title = s.headline || s.author || '';
+    return '<div class="idea-slide-row"><span class="idea-slide-badge">' + escapeHtmlBasic(label) + '</span>' +
+      '<span class="idea-slide-title">' + escapeHtmlBasic(title.slice(0, 40)) + (title.length > 40 ? '…' : '') + '</span></div>';
+  }).join('');
+
+  aiMsg.innerHTML =
+    '<span class="ai-badge">💡 Carrossel gerado · Gemini</span>' +
+    '<div class="idea-preview">' +
+      '<div class="idea-count">✦ ' + parsedSlides.length + ' slides criados</div>' +
+      preview +
+      (parsedSlides.length > 3 ? '<div class="idea-more">+ ' + (parsedSlides.length - 3) + ' mais slides</div>' : '') +
+    '</div>';
+
+  var loadBtn = document.createElement('button');
+  loadBtn.className   = 'use-result-btn';
+  loadBtn.type        = 'button';
+  loadBtn.textContent = '✦ Carregar esses slides no editor';
+  loadBtn.addEventListener('click', function () {
+    slides.length = 0;
+    parsedSlides.forEach(function (s) { slides.push(Object.assign({ brand: 'BESCHEIBEN' }, s)); });
+    currentSlide = 0;
+    renderSlideList();
+    renderSlidePreview();
+    renderEditor();
+
+    var notice = document.createElement('div');
+    notice.className = 'msg ai';
+    notice.innerHTML = '<span class="ai-badge">✓ Slides carregados</span>Revise os textos no painel esquerdo e ajuste o que precisar. Os slides já estão no editor!';
+    messagesEl.appendChild(notice);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+
+  aiMsg.appendChild(loadBtn);
+  messagesEl.appendChild(aiMsg);
+}
+
+function tryParseSlides(text) {
+  try {
+    var clean = text.replace(/```json|```/g, '').trim();
+    var obj   = JSON.parse(clean);
+    if (Array.isArray(obj.slides) && obj.slides.length > 0) return obj.slides;
+  } catch (_) {}
+  return null;
+}
+
+// ── STORY: apply text to slides ───────────────────────
+
 function applyStoryToSlides(text) {
   var matches = Array.from(text.matchAll(/\[SLIDE\s*\d+[^\]]*\][^\[]*/gi));
-
   if (!matches.length) {
-    alert('Não encontrei estrutura de slides no resultado. Use os textos manualmente.');
+    alert('Não encontrei estrutura de slides. Use os textos manualmente.');
     return;
   }
-
   matches.forEach(function (m, i) {
     if (!slides[i]) {
-      slides.push({
-        type: 'content',
-        step: 'PASSO 0' + (i + 1),
-        headline: '',
-        headlineHighlight: '',
-        body: '',
-        brand: 'BESCHEIBEN',
-      });
+      slides.push({ type: 'content', step: 'PASSO 0' + (i + 1), headline: '', body: '', brand: 'BESCHEIBEN' });
     }
-
     var block = m[0].replace(/\[SLIDE[^\]]*\]/i, '').trim();
     var lines = block.split('\n').filter(Boolean);
-
     if (lines[0]) slides[i].headline = lines[0];
     if (lines.length > 1) slides[i].body = lines.slice(1).join(' ');
   });
-
   selectSlide(0);
-  alert(matches.length + ' slides atualizados! Revise e ajuste os textos.');
+  alert(matches.length + ' slides atualizados!');
+}
+
+// ── HELPERS ───────────────────────────────────────────
+
+function getMsgErro(status, data) {
+  var srv = data && data.error;
+  if (status === 429) return '⏳ Limite de requisições. Aguarde e tente novamente.';
+  if (status === 500) return '⚠️ ' + (srv || 'Erro interno. Verifique GEMINI_API_KEY no Vercel.');
+  if (status === 400 || status === 403) return '🔑 Chave de API inválida. Verifique GEMINI_API_KEY.';
+  return srv || '⚠️ Algo deu errado (status ' + status + ').';
+}
+
+function appendError(container, text) {
+  var d = document.createElement('div');
+  d.className = 'msg ai error-msg';
+  d.textContent = text;
+  container.appendChild(d);
+}
+
+function escapeHtmlBasic(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
