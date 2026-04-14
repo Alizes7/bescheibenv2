@@ -35,6 +35,10 @@ var SYSTEM_IDEAS =
 
 // ── AGENT TABS ────────────────────────────────────────
 
+/**
+ * Switches the visible agent pane.
+ * @param {'story'|'ideas'} name
+ */
 function switchAgent(name) {
   var tabs  = document.querySelectorAll('.agent-tab');
   var panes = document.querySelectorAll('.agent-pane');
@@ -49,13 +53,21 @@ function switchAgent(name) {
   panes.forEach(function (pane, i) {
     var visible = order[i] === name;
     pane.classList.toggle('visible', visible);
-    if (visible) pane.removeAttribute('hidden');
-    else pane.setAttribute('hidden', '');
+    if (visible) {
+      pane.removeAttribute('hidden');
+    } else {
+      pane.setAttribute('hidden', '');
+    }
   });
 }
 
 // ── QUICK PROMPT ──────────────────────────────────────
 
+/**
+ * Pre-fills the agent textarea and sends.
+ * @param {'story'|'ideas'} agentId
+ * @param {number} promptIdx
+ */
 function quickPrompt(agentId, promptIdx) {
   var text = QUICK_PROMPTS[agentId][promptIdx];
   if (!text) return;
@@ -65,6 +77,13 @@ function quickPrompt(agentId, promptIdx) {
 
 // ── SEND MESSAGE ──────────────────────────────────────
 
+/**
+ * Sends a user message to the AI agent and renders the response.
+ * The API call goes through /api/chat (Vercel serverless proxy)
+ * so the Anthropic API key never touches the browser.
+ * @param {'story'|'ideas'} agentId
+ * @returns {Promise<void>}
+ */
 async function sendAgent(agentId) {
   var inputEl    = document.getElementById(agentId + 'Input');
   var messagesEl = document.getElementById(agentId + 'Messages');
@@ -72,19 +91,20 @@ async function sendAgent(agentId) {
   var userText   = inputEl.value.trim();
   if (!userText) return;
 
-  // Mensagem do usuário
+  // User message bubble
   var userMsg = document.createElement('div');
-  userMsg.className   = 'msg user';
+  userMsg.className = 'msg user';
   userMsg.textContent = userText;
   messagesEl.appendChild(userMsg);
+
   inputEl.value    = '';
   sendBtn.disabled = true;
 
-  // Indicador de carregamento
+  // Loading indicator
   var loadMsg = document.createElement('div');
   loadMsg.className = 'msg ai loading';
   loadMsg.innerHTML =
-    '<div class="dot-loader" aria-label="Gerando resposta">' +
+    '<div class="dot-loader" aria-label="Carregando resposta">' +
       '<span></span><span></span><span></span>' +
     '</div>';
   messagesEl.appendChild(loadMsg);
@@ -102,38 +122,21 @@ async function sendAgent(agentId) {
       }),
     });
 
-    // Tenta parsear JSON independente do status
-    var data = null;
-    try {
-      data = await res.json();
-    } catch (_) {
-      data = null;
+    if (!res.ok) {
+      var errData = await res.json().catch(function () { return {}; });
+      throw new Error(errData.error || 'HTTP ' + res.status);
     }
+
+    var data  = await res.json();
+    var reply = (data.content && data.content[0] && data.content[0].text) || 'Sem resposta.';
 
     loadMsg.remove();
 
-    if (!res.ok) {
-      // Usa mensagem amigável do servidor se disponível, senão genérica
-      var errText = (data && data.error) || getMensagemErro(res.status);
-      appendErrorMsg(messagesEl, errText);
-      sendBtn.disabled = false;
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-      return;
-    }
-
-    var reply = (data && data.content && data.content[0] && data.content[0].text) || '';
-    if (!reply) {
-      appendErrorMsg(messagesEl, 'O modelo retornou uma resposta vazia. Tente novamente.');
-      sendBtn.disabled = false;
-      return;
-    }
-
-    // Mensagem da IA
     var aiMsg = document.createElement('div');
     aiMsg.className = 'msg ai';
     aiMsg.innerHTML =
       '<span class="ai-badge">' +
-        (agentId === 'story' ? '📖 Storytelling · Gemini' : '💡 Ideia gerada · Gemini') +
+        (agentId === 'story' ? '📖 Storytelling' : '💡 Ideia gerada') +
       '</span>' +
       reply.replace(/\n/g, '<br>');
 
@@ -148,48 +151,27 @@ async function sendAgent(agentId) {
 
     messagesEl.appendChild(aiMsg);
 
-  } catch (networkErr) {
+  } catch (err) {
     loadMsg.remove();
-    console.error('[agents] fetch error:', networkErr);
-    appendErrorMsg(
-      messagesEl,
-      'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
-    );
+    console.error('[agent] fetch error:', err);
+
+    var errMsg = document.createElement('div');
+    errMsg.className   = 'msg ai';
+    errMsg.textContent = 'Erro ao conectar com a IA: ' + err.message;
+    messagesEl.appendChild(errMsg);
   }
 
   sendBtn.disabled = false;
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// ── HELPERS ───────────────────────────────────────────
-
-/**
- * Retorna uma mensagem amigável para códigos HTTP comuns.
- * @param {number} status
- * @returns {string}
- */
-function getMensagemErro(status) {
-  if (status === 429) return '⏳ Limite de requisições atingido. Aguarde alguns segundos e tente novamente.';
-  if (status === 500) return '⚠️ Erro interno no servidor. Verifique se GEMINI_API_KEY está configurada no Vercel.';
-  if (status === 502 || status === 503) return '⚠️ Serviço temporariamente indisponível. Tente novamente.';
-  if (status === 400 || status === 403) return '🔑 Chave de API inválida. Verifique GEMINI_API_KEY no painel do Vercel.';
-  return '⚠️ Algo deu errado (status ' + status + '). Tente novamente.';
-}
-
-/**
- * Adiciona uma bolha de erro amigável no chat.
- * @param {HTMLElement} container
- * @param {string} text
- */
-function appendErrorMsg(container, text) {
-  var errMsg = document.createElement('div');
-  errMsg.className = 'msg ai error-msg';
-  errMsg.textContent = text;
-  container.appendChild(errMsg);
-}
-
 // ── APPLY STORY TO SLIDES ─────────────────────────────
 
+/**
+ * Parses [SLIDE N: ...] markers from the storytelling response
+ * and applies them to the slides array.
+ * @param {string} text
+ */
 function applyStoryToSlides(text) {
   var matches = Array.from(text.matchAll(/\[SLIDE\s*\d+[^\]]*\][^\[]*/gi));
 
@@ -212,6 +194,7 @@ function applyStoryToSlides(text) {
 
     var block = m[0].replace(/\[SLIDE[^\]]*\]/i, '').trim();
     var lines = block.split('\n').filter(Boolean);
+
     if (lines[0]) slides[i].headline = lines[0];
     if (lines.length > 1) slides[i].body = lines.slice(1).join(' ');
   });
