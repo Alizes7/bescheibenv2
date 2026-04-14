@@ -3,73 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Bescheiben Studio — Gerador de carrosséis para Instagram com agentes de IA" />
-  <title>Bescheiben Studio — Carousel Builder</title>
+  <meta name="description" content="Bescheiben Studio — Gerador de carrosséis para Instagram" />
+  <title>Bescheiben Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
-    rel="stylesheet"
-  />
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-    defer
-  ></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
   <link rel="stylesheet" href="/assets/css/styles.css" />
 </head>
 <body>
 
-  <!-- ── HEADER ── -->
+  <!-- TEMPLATE MODAL -->
+  <div class="modal-backdrop" id="templateModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modalTitle">Templates de Carrossel</div>
+          <div class="modal-sub">6 estratégias prontas · dark mode · todos com ganchos para Instagram</div>
+        </div>
+        <button class="modal-close" id="modalClose" type="button" aria-label="Fechar">×</button>
+      </div>
+      <div class="template-grid" id="templateGrid"></div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
   <header role="banner">
     <div class="logo">bescheiben<span>.</span>studio</div>
-
     <nav class="header-tabs" aria-label="Formato do post">
-      <button class="tab-btn active" data-view="carousel" type="button">
-        🎠 Carrossel <span class="tab-dim">4:5</span>
-      </button>
-      <button class="tab-btn" data-view="story" type="button">
-        📱 Story <span class="tab-dim">9:16</span>
-      </button>
+      <button class="tab-btn active" data-view="carousel" type="button">🎠 Carrossel <span class="tab-dim">4:5</span></button>
+      <button class="tab-btn" data-view="story" type="button">📱 Story <span class="tab-dim">9:16</span></button>
       <button class="tab-btn" data-view="ideas" type="button">💡 Ideias</button>
     </nav>
-
-    <span class="header-version" aria-label="Versão do aplicativo">v1.1 · Bescheiben Digital</span>
+    <span class="header-version">v1.3 · Bescheiben Digital</span>
   </header>
 
-  <!-- ── APP LAYOUT ── -->
   <div class="app" role="main">
 
-    <!-- LEFT PANEL: slide list + field editor -->
+    <!-- LEFT PANEL -->
     <aside class="panel" aria-label="Gerenciador de slides">
       <div class="panel-title">Slides do Carrossel</div>
-
+      <button class="load-template-btn" id="openTemplatesBtn" type="button">✦ Carregar Template Pronto</button>
       <ul class="slide-list" id="slideList" role="list" aria-label="Lista de slides"></ul>
-
-      <button class="add-slide-btn" id="addSlideBtn" type="button">
-        + Adicionar slide
-      </button>
-
+      <button class="add-slide-btn" id="addSlideBtn" type="button">+ Adicionar slide</button>
       <section id="editorFields" aria-label="Campos de edição do slide"></section>
     </aside>
 
-    <!-- CENTER: canvas preview -->
+    <!-- CENTER -->
     <section class="canvas-area" aria-label="Pré-visualização do slide">
-
-      <!-- Top toolbar: nav + format badge + font controls -->
       <div class="canvas-toolbar">
-
         <nav class="slide-nav" aria-label="Navegação entre slides">
           <button class="nav-btn" id="prevBtn" type="button" aria-label="Slide anterior">‹</button>
           <div class="nav-indicator" id="navIndicator" aria-live="polite">1 / 1</div>
           <button class="nav-btn" id="nextBtn" type="button" aria-label="Próximo slide">›</button>
         </nav>
-
-        <span class="format-badge" id="formatBadge" aria-live="polite">
-          1080 × 1350 · Carrossel 4:5
-        </span>
-
-        <!-- Font scale controls -->
+        <span class="format-badge" id="formatBadge" aria-live="polite">1080 × 1350 · Carrossel 4:5</span>
         <div class="font-controls" aria-label="Tamanho da fonte">
           <span class="font-controls-label">Fonte</span>
           <button class="font-btn" id="fontDecrease" type="button" aria-label="Diminuir fonte">A−</button>
@@ -77,117 +64,76 @@
           <button class="font-btn" id="fontIncrease" type="button" aria-label="Aumentar fonte">A+</button>
           <button class="font-btn font-reset" id="fontReset" type="button" aria-label="Redefinir fonte">↺</button>
         </div>
-
       </div>
-
-      <!-- Slide canvas -->
       <div class="slide-wrapper">
         <div id="slide-preview" role="img" aria-label="Pré-visualização do slide atual"></div>
       </div>
-
-      <!-- Download bar -->
       <div class="download-bar">
         <button class="dl-btn" id="dlBtn" type="button">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
-               aria-hidden="true" focusable="false">
-            <path d="M8 2v8M5 7l3 3 3-3M2 12h12"/>
-          </svg>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M8 2v8M5 7l3 3 3-3M2 12h12"/></svg>
           Baixar Este Slide
         </button>
-        <button class="dl-all-btn" id="dlAllBtn" type="button">
-          Baixar Todos
-        </button>
+        <button class="dl-all-btn" id="dlAllBtn" type="button">Baixar Todos</button>
       </div>
-
     </section>
 
     <!-- RIGHT PANEL: AI agents -->
-    <aside class="panel" aria-label="Agentes de Inteligência Artificial">
+    <aside class="panel" aria-label="Agentes de IA">
       <div class="panel-title">Agentes IA</div>
-
       <div class="agent-tabs" role="tablist" aria-label="Agentes disponíveis">
-        <button
-          class="agent-tab active"
-          role="tab"
-          aria-selected="true"
-          aria-controls="storyPane"
-          data-agent-tab="story"
-          type="button"
-        >📖 Storytelling</button>
-        <button
-          class="agent-tab"
-          role="tab"
-          aria-selected="false"
-          aria-controls="ideasPane"
-          data-agent-tab="ideas"
-          type="button"
-        >💡 Ideias de Post</button>
+        <button class="agent-tab active" role="tab" aria-selected="true" aria-controls="storyPane" data-agent-tab="story" type="button">📖 Storytelling</button>
+        <button class="agent-tab" role="tab" aria-selected="false" aria-controls="ideasPane" data-agent-tab="ideas" type="button">💡 Gerar Slides</button>
       </div>
 
-      <!-- STORYTELLING PANE -->
-      <div class="agent-pane visible" id="storyPane" role="tabpanel" aria-labelledby="tab-story">
-        <div class="quick-chips" aria-label="Prompts rápidos">
+      <!-- STORYTELLING -->
+      <div class="agent-pane visible" id="storyPane" role="tabpanel">
+        <div class="quick-chips">
           <button class="chip" type="button" data-quick-agent="story" data-prompt-idx="0">📢 B2B</button>
           <button class="chip" type="button" data-quick-agent="story" data-prompt-idx="1">🔄 Transformação</button>
           <button class="chip" type="button" data-quick-agent="story" data-prompt-idx="2">💊 Dor → Solução</button>
           <button class="chip" type="button" data-quick-agent="story" data-prompt-idx="3">🏆 Autoridade</button>
         </div>
-
-        <div class="agent-messages" id="storyMessages" role="log" aria-live="polite"
-             aria-label="Mensagens do agente de storytelling">
+        <div class="agent-messages" id="storyMessages" role="log" aria-live="polite">
           <div class="msg ai">
             <span class="ai-badge">Agente Storytelling · Gemini</span>
-            Oi! Sou o agente de storytelling da Bescheiben. Descreva o tema do seu carrossel e eu crio uma narrativa que conecta, engaja e converte. 🚀
+            Descreva o tema do carrossel e eu crio uma narrativa estruturada por slides. 🚀
           </div>
         </div>
-
         <div class="agent-input-area">
-          <label for="storyInput" class="sr-only">Mensagem para o agente de storytelling</label>
-          <textarea
-            id="storyInput"
-            placeholder="Ex: Quero um carrossel sobre por que empresas B2B precisam de presença no Instagram..."
-            rows="3"
-          ></textarea>
-          <button class="agent-send-btn" id="storySendBtn" type="button">
-            ✦ Gerar Storytelling
-          </button>
+          <label for="storyInput" class="sr-only">Mensagem para storytelling</label>
+          <textarea id="storyInput" placeholder="Ex: Quero um carrossel sobre por que empresas B2B precisam de presença no Instagram..." rows="3"></textarea>
+          <button class="agent-send-btn" id="storySendBtn" type="button">✦ Gerar Storytelling</button>
         </div>
       </div>
 
-      <!-- IDEAS PANE -->
-      <div class="agent-pane" id="ideasPane" role="tabpanel" aria-labelledby="tab-ideas" hidden>
-        <div class="quick-chips" aria-label="Prompts rápidos">
-          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="0">🏢 Agência</button>
-          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="1">📊 Contabilidade</button>
-          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="2">🔥 Viral B2B</button>
-          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="3">🎓 Educativo</button>
+      <!-- IDEAS / GERAR SLIDES -->
+      <div class="agent-pane" id="ideasPane" role="tabpanel" hidden>
+        <div class="ideas-intro">
+          <div class="ideas-intro-title">✦ Gerar carrossel completo com IA</div>
+          <div class="ideas-intro-sub">Descreva o tema e a IA cria os slides prontos para editar e baixar.</div>
         </div>
-
-        <div class="agent-messages" id="ideasMessages" role="log" aria-live="polite"
-             aria-label="Mensagens do agente de ideias">
+        <div class="quick-chips">
+          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="0">🏢 Agência Digital</button>
+          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="1">📊 Leads B2B</button>
+          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="2">⚠️ Erros digitais</button>
+          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="3">📈 Processo</button>
+        </div>
+        <div class="agent-messages" id="ideasMessages" role="log" aria-live="polite">
           <div class="msg ai">
-            <span class="ai-badge">Gerador de Ideias · Gemini</span>
-            Pronto para explodir sua criatividade! Me diga o nicho, público e objetivo — eu entrega ideias de posts que param o scroll e geram resultado. 💡
+            <span class="ai-badge">Gerador de Slides · Gemini</span>
+            Diga o tema e eu monto um carrossel completo. Você revisa, edita e baixa. 💡
           </div>
         </div>
-
         <div class="agent-input-area">
-          <label for="ideasInput" class="sr-only">Mensagem para o gerador de ideias</label>
-          <textarea
-            id="ideasInput"
-            placeholder="Ex: Preciso de 5 ideias de carrossel para uma agência B2B focada em resultados..."
-            rows="3"
-          ></textarea>
-          <button class="agent-send-btn" id="ideasSendBtn" type="button">
-            ✦ Gerar Ideias
-          </button>
+          <label for="ideasInput" class="sr-only">Mensagem para geração de slides</label>
+          <textarea id="ideasInput" placeholder="Ex: Crie um carrossel sobre como uma agência digital B2B pode gerar leads qualificados no Instagram..." rows="3"></textarea>
+          <button class="agent-send-btn" id="ideasSendBtn" type="button">✦ Gerar Slides com IA</button>
         </div>
       </div>
-
     </aside>
+
   </div>
 
-  <!-- JS load order: globals → dependents -->
   <script src="/assets/js/state.js"></script>
   <script src="/assets/js/builder.js"></script>
   <script src="/assets/js/renderer.js"></script>
@@ -195,6 +141,5 @@
   <script src="/assets/js/download.js"></script>
   <script src="/assets/js/agents.js"></script>
   <script src="/assets/js/main.js"></script>
-
 </body>
 </html>
