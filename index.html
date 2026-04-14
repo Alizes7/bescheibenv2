@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Bescheiben Studio — Gerador de carrosséis para Instagram com agentes de IA" />
+  <title>Bescheiben Studio — Carousel Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+    rel="stylesheet"
+  />
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+    defer
+  ></script>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ── -->
+  <header role="banner">
+    <div class="logo">bescheiben<span>.</span>studio</div>
+
+    <nav class="header-tabs" aria-label="Formato do post">
+      <button class="tab-btn active" data-view="carousel" type="button">
+        🎠 Carrossel <span class="tab-dim">4:5</span>
+      </button>
+      <button class="tab-btn" data-view="story" type="button">
+        📱 Story <span class="tab-dim">9:16</span>
+      </button>
+      <button class="tab-btn" data-view="ideas" type="button">💡 Ideias</button>
+    </nav>
+
+    <span class="header-version" aria-label="Versão do aplicativo">v1.1 · Bescheiben Digital</span>
+  </header>
+
+  <!-- ── APP LAYOUT ── -->
+  <div class="app" role="main">
+
+    <!-- LEFT PANEL: slide list + field editor -->
+    <aside class="panel" aria-label="Gerenciador de slides">
+      <div class="panel-title">Slides do Carrossel</div>
+
+      <ul class="slide-list" id="slideList" role="list" aria-label="Lista de slides"></ul>
+
+      <button class="add-slide-btn" id="addSlideBtn" type="button">
+        + Adicionar slide
+      </button>
+
+      <section id="editorFields" aria-label="Campos de edição do slide"></section>
+    </aside>
+
+    <!-- CENTER: canvas preview -->
+    <section class="canvas-area" aria-label="Pré-visualização do slide">
+
+      <!-- Top toolbar: nav + format badge + font controls -->
+      <div class="canvas-toolbar">
+
+        <nav class="slide-nav" aria-label="Navegação entre slides">
+          <button class="nav-btn" id="prevBtn" type="button" aria-label="Slide anterior">‹</button>
+          <div class="nav-indicator" id="navIndicator" aria-live="polite">1 / 1</div>
+          <button class="nav-btn" id="nextBtn" type="button" aria-label="Próximo slide">›</button>
+        </nav>
+
+        <span class="format-badge" id="formatBadge" aria-live="polite">
+          1080 × 1350 · Carrossel 4:5
+        </span>
+
+        <!-- Font scale controls -->
+        <div class="font-controls" aria-label="Tamanho da fonte">
+          <span class="font-controls-label">Fonte</span>
+          <button class="font-btn" id="fontDecrease" type="button" aria-label="Diminuir fonte">A−</button>
+          <span class="font-scale-display" id="fontScaleDisplay" aria-live="polite">100%</span>
+          <button class="font-btn" id="fontIncrease" type="button" aria-label="Aumentar fonte">A+</button>
+          <button class="font-btn font-reset" id="fontReset" type="button" aria-label="Redefinir fonte">↺</button>
+        </div>
+
+      </div>
+
+      <!-- Slide canvas -->
+      <div class="slide-wrapper">
+        <div id="slide-preview" role="img" aria-label="Pré-visualização do slide atual"></div>
+      </div>
+
+      <!-- Download bar -->
+      <div class="download-bar">
+        <button class="dl-btn" id="dlBtn" type="button">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
+               aria-hidden="true" focusable="false">
+            <path d="M8 2v8M5 7l3 3 3-3M2 12h12"/>
+          </svg>
+          Baixar Este Slide
+        </button>
+        <button class="dl-all-btn" id="dlAllBtn" type="button">
+          Baixar Todos
+        </button>
+      </div>
+
+    </section>
+
+    <!-- RIGHT PANEL: AI agents -->
+    <aside class="panel" aria-label="Agentes de Inteligência Artificial">
+      <div class="panel-title">Agentes IA</div>
+
+      <div class="agent-tabs" role="tablist" aria-label="Agentes disponíveis">
+        <button
+          class="agent-tab active"
+          role="tab"
+          aria-selected="true"
+          aria-controls="storyPane"
+          data-agent-tab="story"
+          type="button"
+        >📖 Storytelling</button>
+        <button
+          class="agent-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="ideasPane"
+          data-agent-tab="ideas"
+          type="button"
+        >💡 Ideias de Post</button>
+      </div>
+
+      <!-- STORYTELLING PANE -->
+      <div class="agent-pane visible" id="storyPane" role="tabpanel" aria-labelledby="tab-story">
+        <div class="quick-chips" aria-label="Prompts rápidos">
+          <button class="chip" type="button" data-quick-agent="story" data-prompt-idx="0">📢 B2B</button>
+          <button class="chip" type="button" data-quick-agent="story" data-prompt-idx="1">🔄 Transformação</button>
+          <button class="chip" type="button" data-quick-agent="story" data-prompt-idx="2">💊 Dor → Solução</button>
+          <button class="chip" type="button" data-quick-agent="story" data-prompt-idx="3">🏆 Autoridade</button>
+        </div>
+
+        <div class="agent-messages" id="storyMessages" role="log" aria-live="polite"
+             aria-label="Mensagens do agente de storytelling">
+          <div class="msg ai">
+            <span class="ai-badge">Agente Storytelling · Gemini</span>
+            Oi! Sou o agente de storytelling da Bescheiben. Descreva o tema do seu carrossel e eu crio uma narrativa que conecta, engaja e converte. 🚀
+          </div>
+        </div>
+
+        <div class="agent-input-area">
+          <label for="storyInput" class="sr-only">Mensagem para o agente de storytelling</label>
+          <textarea
+            id="storyInput"
+            placeholder="Ex: Quero um carrossel sobre por que empresas B2B precisam de presença no Instagram..."
+            rows="3"
+          ></textarea>
+          <button class="agent-send-btn" id="storySendBtn" type="button">
+            ✦ Gerar Storytelling
+          </button>
+        </div>
+      </div>
+
+      <!-- IDEAS PANE -->
+      <div class="agent-pane" id="ideasPane" role="tabpanel" aria-labelledby="tab-ideas" hidden>
+        <div class="quick-chips" aria-label="Prompts rápidos">
+          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="0">🏢 Agência</button>
+          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="1">📊 Contabilidade</button>
+          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="2">🔥 Viral B2B</button>
+          <button class="chip" type="button" data-quick-agent="ideas" data-prompt-idx="3">🎓 Educativo</button>
+        </div>
+
+        <div class="agent-messages" id="ideasMessages" role="log" aria-live="polite"
+             aria-label="Mensagens do agente de ideias">
+          <div class="msg ai">
+            <span class="ai-badge">Gerador de Ideias · Gemini</span>
+            Pronto para explodir sua criatividade! Me diga o nicho, público e objetivo — eu entrega ideias de posts que param o scroll e geram resultado. 💡
+          </div>
+        </div>
+
+        <div class="agent-input-area">
+          <label for="ideasInput" class="sr-only">Mensagem para o gerador de ideias</label>
+          <textarea
+            id="ideasInput"
+            placeholder="Ex: Preciso de 5 ideias de carrossel para uma agência B2B focada em resultados..."
+            rows="3"
+          ></textarea>
+          <button class="agent-send-btn" id="ideasSendBtn" type="button">
+            ✦ Gerar Ideias
+          </button>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- JS load order: globals → dependents -->
+  <script src="/assets/js/state.js"></script>
+  <script src="/assets/js/builder.js"></script>
+  <script src="/assets/js/renderer.js"></script>
+  <script src="/assets/js/nav.js"></script>
+  <script src="/assets/js/download.js"></script>
+  <script src="/assets/js/agents.js"></script>
+  <script src="/assets/js/main.js"></script>
+
+</body>
+</html>
