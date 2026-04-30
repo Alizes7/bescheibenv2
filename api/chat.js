@@ -1,129 +1,69 @@
+// api/chat.js — Vercel Serverless · Gemini 1.5 Flash proxy
 'use strict';
 
-/**
- * Vercel Serverless Function — POST /api/chat
- * Proxy seguro para a Gemini API (gemini-2.5-flash — free tier).
- * A chave fica em: Vercel → Project → Settings → Environment Variables → GEMINI_API_KEY
- */
-module.exports = async function handler(req, res) {
-  // ── CORS ──────────────────────────────────────────────
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const GEMINI_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método não permitido.' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // ── VALIDAR CHAVE ─────────────────────────────────────
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey.trim() === '') {
-    console.error('[api/chat] GEMINI_API_KEY não configurada no Vercel.');
-    return res.status(500).json({
-      error: 'Chave da API não configurada no servidor. Vá em Vercel → Settings → Environment Variables e adicione GEMINI_API_KEY.',
+  const { system, messages, geminiKey } = req.body || {};
+
+  // Key: env var (production) or client key (local/dev)
+  const key = process.env.GEMINI_API_KEY || geminiKey || '';
+
+  if (!key) {
+    return res.status(400).json({
+      error:
+        'Chave Gemini não configurada. Adicione GEMINI_API_KEY no painel do Vercel ou configure na UI (⚙).',
     });
   }
 
-  // ── VALIDAR BODY ──────────────────────────────────────
-  const body = req.body || {};
-  const { system, messages } = body;
-
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: 'Campo "messages" é obrigatório e deve ser um array.' });
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'Mensagens inválidas.' });
   }
 
-  // ── MONTAR PAYLOAD GEMINI ─────────────────────────────
-  // Converte o formato { role, content } → { role, parts: [{ text }] }
-  const contents = messages.map(function (m) {
-    return {
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: String(m.content || '') }],
-    };
-  });
-
-  const payload = {
-    contents,
-    generationConfig: {
-      maxOutputTokens: 1500,
-      temperature: 0.85,
-    },
-  };
-
-  // Instrução de sistema (suportada nativamente pelo Gemini)
-  if (system && typeof system === 'string' && system.trim() !== '') {
-    payload.systemInstruction = {
-      parts: [{ text: system.trim() }],
-    };
-  }
-
-  // ── CHAMAR GEMINI ─────────────────────────────────────
-  const url =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' +
-    apiKey.trim();
-
-  let geminiRes;
   try {
-    geminiRes = await fetch(url, {
+    const geminiRes = await fetch(`${GEMINI_URL}?key=${key}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        system_instruction: system ? { parts: [{ text: system }] } : undefined,
+        contents: messages.map((m) => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }],
+        })),
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 3000,
+        },
+      }),
     });
-  } catch (networkErr) {
-    console.error('[api/chat] Erro de rede ao chamar Gemini:', networkErr.message);
-    return res.status(502).json({
-      error: 'Não foi possível conectar à API do Gemini. Tente novamente.',
-    });
-  }
 
-  // ── PARSEAR RESPOSTA ──────────────────────────────────
-  let data;
-  try {
-    data = await geminiRes.json();
-  } catch (parseErr) {
-    console.error('[api/chat] Resposta não é JSON válido. Status:', geminiRes.status);
-    return res.status(502).json({ error: 'Resposta inválida da API do Gemini.' });
-  }
+    const data = await geminiRes.json();
 
-  if (!geminiRes.ok) {
-    const msg = (data.error && data.error.message) || 'Erro desconhecido do Gemini.';
-    console.error('[api/chat] Gemini retornou erro:', geminiRes.status, msg);
-
-    // Quota excedida → mensagem amigável
-    if (geminiRes.status === 429) {
-      return res.status(429).json({
-        error: 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.',
-      });
+    if (!geminiRes.ok) {
+      const msg =
+        data?.error?.message ||
+        (geminiRes.status === 429
+          ? 'Limite de requisições atingido. Aguarde 30 segundos e tente novamente.'
+          : geminiRes.status === 400 || geminiRes.status === 403
+          ? 'Chave API inválida. Verifique nas configurações.'
+          : `Erro Gemini: ${geminiRes.status}`);
+      return res.status(geminiRes.status).json({ error: msg });
     }
 
-    // Chave inválida
-    if (geminiRes.status === 400 || geminiRes.status === 403) {
-      return res.status(geminiRes.status).json({
-        error: 'Chave da API inválida ou sem permissão. Verifique GEMINI_API_KEY no Vercel.',
-      });
-    }
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    return res.status(geminiRes.status).json({ error: msg });
+    // Return in format compatible with original frontend expectation
+    return res.json({ content: [{ type: 'text', text }] });
+  } catch (err) {
+    console.error('[api/chat]', err);
+    return res.status(503).json({
+      error: 'Sem conexão com a IA. Verifique sua internet e tente novamente.',
+    });
   }
-
-  // ── EXTRAIR TEXTO ─────────────────────────────────────
-  const text =
-    data.candidates &&
-    data.candidates[0] &&
-    data.candidates[0].content &&
-    data.candidates[0].content.parts &&
-    data.candidates[0].content.parts[0] &&
-    data.candidates[0].content.parts[0].text;
-
-  if (!text) {
-    console.error('[api/chat] Resposta do Gemini sem texto. Shape:', JSON.stringify(data).slice(0, 300));
-    return res.status(500).json({ error: 'Resposta vazia do modelo. Tente novamente.' });
-  }
-
-  // ── RETORNAR ──────────────────────────────────────────
-  // Normalizado para o formato que o frontend espera:
-  // { content: [{ type: 'text', text: '...' }] }
-  return res.status(200).json({
-    content: [{ type: 'text', text }],
-  });
-};
+}

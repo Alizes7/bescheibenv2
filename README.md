@@ -1,73 +1,53 @@
-# Bescheiben Studio v1.1 — Carousel Builder
+# Bescheiben Studio v2
 
-Gerador de carrosséis e stories para Instagram com agentes de IA (Gemini).
-Stack: HTML estático + Vanilla JS + Vercel Serverless Functions.
+Gerador de carrosséis para Instagram da Bescheiben Digital Agency.
 
----
-
-## Estrutura do projeto
+## Estrutura
 
 ```
 bescheiben-studio/
-├── index.html
-├── assets/
-│   ├── css/styles.css
-│   └── js/
-│       ├── state.js       ← slides[], currentMode, fontScale, FORMAT
-│       ├── builder.js     ← buildSlideHtml()
-│       ├── renderer.js    ← DOM render + font scale controls
-│       ├── nav.js         ← selectSlide, addSlide, deleteSlide, moveSlide
-│       ├── download.js    ← PNG export adaptado ao modo (carousel/story)
-│       ├── agents.js      ← Gemini agents (Storytelling + Ideias)
-│       └── main.js        ← Event listeners, mode switching
+├── index.html              # HTML principal
+├── vercel.json             # Deploy config
 ├── api/
-│   └── chat.js            ← Proxy Gemini (chave fica no servidor)
-├── vercel.json
-├── .env.example
-└── README.md
+│   └── chat.js             # Proxy Gemini (Vercel serverless)
+└── assets/
+    ├── css/
+    │   └── styles.css      # Todos os estilos (Space Grotesk)
+    └── js/
+        ├── state.js        # Dados globais, templates
+        ├── builder.js      # Construtores HTML dos slides
+        ├── nav.js          # Navegação, lista, editor
+        ├── renderer.js     # Download PNG (html2canvas)
+        ├── chat.js         # Agentes IA (Gemini 1.5 Flash)
+        └── main.js         # Event listeners, init
 ```
-
----
-
-## Novidades v1.1
-
-- **Tab Story** — muda as dimensões do preview para 1080×1920 (9:16) com transição animada
-- **Controles de fonte** — botões A+ / A− / ↺ na toolbar, escala de 60% a 180%
-- **Badge de formato** — exibe a resolução de exportação atual (ex: `1080 × 1920 · Story 9:16`)
-- **Download adaptativo** — exporta na resolução correta para o modo ativo
-- **IA migrada para Gemini 2.0 Flash** — mais rápido, sem custo de API Anthropic
-
----
 
 ## Deploy no Vercel
 
-### 1. Faça o deploy
+1. Importe o repositório no [vercel.com](https://vercel.com)
+2. Nas **Environment Variables**, adicione:
+   - `GEMINI_API_KEY` = sua chave Gemini (gratuita em aistudio.google.com)
+3. Deploy automático
+
+## Uso local
+
+Sem backend:
 ```bash
-npm i -g vercel
-cd bescheiben-studio
-vercel
+npx serve .
 ```
+Então abra `http://localhost:3000` e configure a chave Gemini em ⚙.
 
-Ou importe diretamente em [vercel.com/new](https://vercel.com/new).
+## Fonte
 
-### 2. Configure a variável de ambiente
+**Space Grotesk** — fonte primária da marca conforme Brand Guidelines v1.0 (p.4).
 
-**Project → Settings → Environment Variables**
+## Cores
 
-| Nome             | Valor                                     |
-|------------------|-------------------------------------------|
-| `GEMINI_API_KEY` | `AIzaSyC9ADkMFJ_Vecho8lcF8VLf1hrxd7mBbp0` |
+| Token         | Hex       | Uso                    |
+|---------------|-----------|------------------------|
+| Brand primary | `#6B4EFF` | Cor principal Bescheiben |
+| Brand deep    | `#4A32D4` | Hover / gradiente      |
+| Brand accent  | `#A58BFF` | Destaques, badges      |
+| Brand light   | `#C4B5FD` | Texto em dark          |
 
-### 3. Redeploy
-```bash
-vercel --prod
-```
-
----
-
-## Desenvolvimento local
-
-```bash
-cp .env.example .env.local
-vercel dev   # inicia em http://localhost:3000
-```
+© 2025 Bescheiben Digital Agency

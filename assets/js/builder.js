@@ -1,7 +1,11 @@
 'use strict';
 
-// ── HELPERS ───────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
+   builder.js — slide HTML generation
+   Font: Space Grotesk · Brand: #6B4EFF / #A58BFF
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ── Helpers ── */
 function escHtml(s) {
   return String(s || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -17,26 +21,34 @@ function highlight(text, phrase) {
 
 function pad2(n) { return String(n).padStart(2, '0'); }
 
-function slideCounter(idx, total) {
-  return '<div class="dk-counter">' + pad2(idx + 1) + ' <span>/</span> ' + pad2(total) + '</div>';
-}
-
-// Swipe cue shown on cover slides
-function swipeCue(text) {
+/* ── Sub-components ── */
+function brandBadge() {
+  /* Text-only logo as per brand manual — no icon pixel */
   return (
-    '<div class="dk-swipe-cue">' +
-      '<span class="dk-swipe-label">' + escHtml(text || 'DESLIZE PARA VER') + '</span>' +
-      '<div class="dk-swipe-dots">' +
-        '<span class="dk-dot dk-dot--active"></span>' +
-        '<span class="dk-dot"></span>' +
-        '<span class="dk-dot"></span>' +
-        '<span class="dk-dot"></span>' +
-      '</div>' +
+    '<div class="dk-brand">' +
+      '<div class="dk-brand-name">Bescheiben</div>' +
+      '<div class="dk-brand-sub">DIGITAL AGENCY</div>' +
     '</div>'
   );
 }
 
-// Arrow button shown on content/quote/cta slides
+function slideCounter(idx, total) {
+  return (
+    '<div class="dk-counter">' +
+      pad2(idx + 1) + ' <span>/</span> ' + pad2(total) +
+    '</div>'
+  );
+}
+
+function progressBar(idx, total) {
+  var pct = Math.round(((idx + 1) / total) * 100);
+  return (
+    '<div class="dk-progress-bar">' +
+      '<div class="dk-progress-fill" style="width:' + pct + '%"></div>' +
+    '</div>'
+  );
+}
+
 function nextArrow() {
   return (
     '<div class="dk-next-arrow" aria-hidden="true">' +
@@ -47,41 +59,56 @@ function nextArrow() {
   );
 }
 
-// Bescheiben brand in top-left
-function brandBadge(dark) {
+function swipeCue(text, total) {
+  var n = total || 5;
+  var dots = '';
+  for (var i = 0; i < n; i++) {
+    dots += '<span class="dk-nav-dot' + (i === 0 ? ' dk-nav-dot--active' : '') + '"></span>';
+  }
   return (
-    '<div class="dk-brand ' + (dark ? 'dk-brand--on-dark' : 'dk-brand--on-dark') + '">' +
-      '<div class="dk-brand-dot" aria-hidden="true"></div>' +
-      '<span class="dk-brand-name">BESCHEIBEN</span>' +
+    '<div class="dk-swipe-cue">' +
+      '<span class="dk-swipe-label">' +
+        escHtml(text || 'DESLIZE') +
+        ' <span class="dk-swipe-arrow">→</span>' +
+      '</span>' +
+    '</div>' +
+    '<div class="dk-nav-dots">' + dots + '</div>'
+  );
+}
+
+function navDotsRight(idx, total) {
+  var dots = '';
+  for (var i = 0; i < total; i++) {
+    dots += '<span class="dk-nav-dot' + (i === idx ? ' dk-nav-dot--active' : '') + '"></span>';
+  }
+  return '<div class="dk-nav-dots">' + dots + '</div>';
+}
+
+function igStrip() {
+  return (
+    '<div class="dk-ig-strip">' +
+      '<div class="dk-ig-item">💾 Salve esse post</div>' +
+      '<div class="dk-ig-item">💬 Comente CRESCER</div>' +
+      '<div class="dk-ig-item">👆 Siga @bescheiben</div>' +
     '</div>'
   );
 }
 
-// Instagram engagement CTA strip (save, comment, follow)
-function igStrip(actions) {
-  var items = (actions || ['💾 Salve', '💬 Comente', '👆 Siga']).map(function (a) {
-    return '<div class="dk-ig-item">' + a + '</div>';
-  }).join('');
-  return '<div class="dk-ig-strip">' + items + '</div>';
+function getThemeClass(s) {
+  if (s.theme === 'purple') return ' dk-theme-purple';
+  if (s.theme === 'white')  return ' dk-theme-white';
+  return '';
 }
 
-// ── MAIN BUILDER ──────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════
+   SLIDE TYPE BUILDERS
+══════════════════════════════════════════════════════════════ */
 
-function buildSlideHtml(s, idx, total) {
-  switch (s.type) {
-    case 'cover':   return buildCover(s, idx, total);
-    case 'content': return buildContent(s, idx, total);
-    case 'quote':   return buildQuote(s, idx, total);
-    case 'cta':     return buildCta(s, idx, total);
-    default:        return '<div class="slide-canvas dk-base"></div>';
-  }
-}
-
-// ── COVER ─────────────────────────────────────────────
-// Dark bg · large headline · swipe cue · glow
+/* ── COVER ── */
 function buildCover(s, idx, total) {
+  var tc = getThemeClass(s);
   return (
-    '<div class="slide-canvas dk-base dk-cover">' +
+    '<div class="slide-canvas dk-base dk-cover' + tc + '">' +
       '<div class="dk-glow dk-glow--tr" aria-hidden="true"></div>' +
       '<div class="dk-glow dk-glow--bl" aria-hidden="true"></div>' +
       '<div class="dk-grid-lines" aria-hidden="true"></div>' +
@@ -92,40 +119,36 @@ function buildCover(s, idx, total) {
         slideCounter(idx, total) +
       '</div>' +
 
-      /* main */
+      /* main content */
       '<div class="dk-cover-body">' +
         '<div class="dk-tag">' + escHtml(s.tag || 'BESCHEIBEN') + '</div>' +
         '<h1 class="dk-cover-headline">' + highlight(s.headline, s.headlineHighlight) + '</h1>' +
         (s.sub ? '<p class="dk-cover-sub">' + escHtml(s.sub) + '</p>' : '') +
       '</div>' +
 
-      /* bottom */
+      /* bottom bar — swipe left, nav dots right */
       '<div class="dk-cover-bottom">' +
-        (s.showCta ? swipeCue(s.cta) : '') +
+        (s.showCta ? swipeCue(s.cta, total) : navDotsRight(idx, total)) +
       '</div>' +
-
     '</div>'
   );
 }
 
-// ── CONTENT ───────────────────────────────────────────
-// Dark bg · ghost number · step badge · body text · next arrow
+/* ── CONTENT ── */
 function buildContent(s, idx, total) {
-  var gn = String(s.step || '').match(/\d+/);
+  var tc = getThemeClass(s);
+  var gn    = String(s.step || '').match(/\d+/);
   var ghost = gn ? gn[0].padStart(2, '0') : pad2(idx + 1);
-
   return (
-    '<div class="slide-canvas dk-base dk-content">' +
+    '<div class="slide-canvas dk-base dk-content' + tc + '">' +
       '<div class="dk-ghost-num" aria-hidden="true">' + ghost + '</div>' +
       '<div class="dk-glow dk-glow--br" aria-hidden="true"></div>' +
 
-      /* top bar */
       '<div class="dk-topbar">' +
         brandBadge() +
         slideCounter(idx, total) +
       '</div>' +
 
-      /* body */
       '<div class="dk-content-body">' +
         '<div class="dk-step-row">' +
           '<div class="dk-step-badge">' + escHtml(s.step || 'CONTEÚDO') + '</div>' +
@@ -135,30 +158,27 @@ function buildContent(s, idx, total) {
         '<p class="dk-content-text">' + escHtml(s.body || '') + '</p>' +
       '</div>' +
 
-      /* footer */
       '<div class="dk-footer">' +
         '<div class="dk-footer-brand">@bescheiben</div>' +
+        progressBar(idx, total) +
         nextArrow() +
       '</div>' +
-
     '</div>'
   );
 }
 
-// ── QUOTE ─────────────────────────────────────────────
-// Dark bg · pre-text above line · bold statement · vertical accent
+/* ── QUOTE ── */
 function buildQuote(s, idx, total) {
+  var tc = getThemeClass(s);
   return (
-    '<div class="slide-canvas dk-base dk-quote">' +
+    '<div class="slide-canvas dk-base dk-quote' + tc + '">' +
       '<div class="dk-glow dk-glow--center" aria-hidden="true"></div>' +
 
-      /* top bar */
       '<div class="dk-topbar">' +
         brandBadge() +
         slideCounter(idx, total) +
       '</div>' +
 
-      /* body */
       '<div class="dk-quote-body">' +
         '<div class="dk-quote-tag">' + escHtml(s.quoteTag || 'INSIGHT') + '</div>' +
         (s.quote
@@ -171,19 +191,18 @@ function buildQuote(s, idx, total) {
         '</div>' +
       '</div>' +
 
-      /* footer */
       '<div class="dk-footer">' +
         '<div class="dk-footer-brand">@bescheiben</div>' +
+        progressBar(idx, total) +
         nextArrow() +
       '</div>' +
-
     '</div>'
   );
 }
 
-// ── CTA ───────────────────────────────────────────────
-// Dark bg · headline · full-width button · checklist · IG strip
+/* ── CTA ── */
 function buildCta(s, idx, total) {
+  var tc    = getThemeClass(s);
   var lines = (s.body || '').split('\n').filter(Boolean);
   var checks = lines.map(function (l) {
     return (
@@ -199,17 +218,15 @@ function buildCta(s, idx, total) {
   }).join('');
 
   return (
-    '<div class="slide-canvas dk-base dk-cta">' +
+    '<div class="slide-canvas dk-base dk-cta' + tc + '">' +
       '<div class="dk-glow dk-glow--tr" aria-hidden="true"></div>' +
       '<div class="dk-glow dk-glow--bl-sm" aria-hidden="true"></div>' +
 
-      /* top bar */
       '<div class="dk-topbar">' +
         brandBadge() +
         slideCounter(idx, total) +
       '</div>' +
 
-      /* body */
       '<div class="dk-cta-body">' +
         '<div class="dk-cta-tag">' + escHtml(s.eyebrow || 'PRÓXIMO PASSO') + '</div>' +
         '<h2 class="dk-cta-headline">' + highlight(s.headline, s.headlineHighlight) + '</h2>' +
@@ -222,9 +239,83 @@ function buildCta(s, idx, total) {
         (checks ? '<div class="dk-checks">' + checks + '</div>' : '') +
       '</div>' +
 
-      /* IG engagement strip */
-      igStrip(['💾 Salve esse post', '💬 Comente CRESCER', '👆 Siga @bescheiben']) +
-
+      igStrip() +
     '</div>'
   );
+}
+
+/* ── DYNAMIC (funnel split) ── */
+function buildDynamic(s, idx, total) {
+  var tc    = getThemeClass(s);
+  var items = s.funnelItems || [];
+  var gn    = String(s.step || '').match(/\d+/);
+  var ghost = gn ? gn[0].padStart(2, '0') : pad2(idx + 1);
+
+  var funnelHtml = items.map(function (item, i) {
+    var isLast = i === items.length - 1;
+    return (
+      '<div class="dk-fi-entry">' +
+        '<div class="dk-fi-cat">' + escHtml(item.cat || '') + '</div>' +
+        '<div class="dk-fi-pill-row">' +
+          '<div class="dk-fi-pill" style="background:' + escHtml(item.color || '#6B4EFF') + '">' +
+            escHtml(item.label || '') +
+          '</div>' +
+          (item.sub
+            ? '<div class="dk-fi-sub-pill">' + escHtml(item.sub) + '</div>'
+            : '') +
+        '</div>' +
+        (!isLast ? '<div class="dk-fi-connector"></div>' : '') +
+      '</div>'
+    );
+  }).join('');
+
+  return (
+    '<div class="slide-canvas dk-base dk-dynamic' + tc + '">' +
+      '<div class="dk-ghost-num" aria-hidden="true">' + ghost + '</div>' +
+      '<div class="dk-glow dk-glow--tr" aria-hidden="true"></div>' +
+      '<div class="dk-glow dk-glow--bl" aria-hidden="true"></div>' +
+
+      '<div class="dk-topbar">' +
+        brandBadge() +
+        slideCounter(idx, total) +
+      '</div>' +
+
+      /* vertical divider */
+      '<div class="dk-dyn-divider" aria-hidden="true"></div>' +
+
+      /* left — text content */
+      '<div class="dk-dyn-left">' +
+        '<div class="dk-tag">' + escHtml(s.tag || '') + '</div>' +
+        '<div class="dk-step-row">' +
+          '<div class="dk-step-badge">' + escHtml(s.step || 'CONTEÚDO') + '</div>' +
+          '<div class="dk-step-line" aria-hidden="true"></div>' +
+        '</div>' +
+        '<h2 class="dk-content-headline">' + highlight(s.headline, s.headlineHighlight) + '</h2>' +
+        '<p class="dk-content-text">' + escHtml(s.body || '') + '</p>' +
+      '</div>' +
+
+      /* right — funnel pills */
+      '<div class="dk-dyn-right">' +
+        '<div class="dk-fi-wrap">' + funnelHtml + '</div>' +
+      '</div>' +
+
+      '<div class="dk-footer">' +
+        '<div class="dk-footer-brand">@bescheiben</div>' +
+        progressBar(idx, total) +
+        nextArrow() +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/* ── ROUTER ── */
+function buildSlideHtml(s, idx, total) {
+  switch (s.type) {
+    case 'cover':   return buildCover(s, idx, total);
+    case 'content': return buildContent(s, idx, total);
+    case 'quote':   return buildQuote(s, idx, total);
+    case 'cta':     return buildCta(s, idx, total);
+    case 'dynamic': return buildDynamic(s, idx, total);
+    default:        return '<div class="slide-canvas dk-base"></div>';
+  }
 }
